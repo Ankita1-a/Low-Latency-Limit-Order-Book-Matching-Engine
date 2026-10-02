@@ -16,6 +16,10 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release)
 endif()
+# Keep debug information (-g) in optimized builds so profilers can show
+# function names and source lines. It doesn't change the generated code.
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -g")
+
 
 # A reusable bundle of compiler warnings. Every program we build will link to it.
 add_library(lob_warnings INTERFACE)

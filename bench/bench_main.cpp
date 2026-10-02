@@ -2,11 +2,14 @@
 //
 // Measures order book speed on a realistic pre-generated workload.
 // Reports throughput per run and the distribution of batch latencies.
+//
+// Usage: ./build/bench_book [runs]     (default 5; use more when profiling)
 
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
+#include <cstdlib>       // std::atoi
 #include <vector>
 
 #include "lob/events.hpp"
@@ -18,15 +21,14 @@ using namespace lob;
 using namespace lob::bench;
 
 constexpr std::size_t kBatch    = 256;          // ops per timed batch (timer step ~42 ns)
-constexpr int         kRuns     = 5;
 constexpr std::size_t kCapacity = 1'000'000;    // plenty of room for every book
 
 template <class Book>
-void run_benchmark(const char* name, const Workload& w, double tpn) {
-    std::printf("\n== %s: %d runs x %zu ops ==\n", name, kRuns, w.ops.size());
+void run_benchmark(const char* name, const Workload& w, double tpn, int runs) {
+    std::printf("\n== %s: %d runs x %zu ops ==\n", name, runs, w.ops.size());
     std::vector<double> all_batches;   // ns per op, one sample per batch
 
-    for (int run = 1; run <= kRuns; ++run) {
+    for (int run = 1; run <= runs; ++run) {
         CountingListener counter;
         Book book(counter, w.min_price, w.max_price, kCapacity);
         for (const Op& op : w.prefill) apply(book, op);     // starting book, not timed
@@ -65,7 +67,8 @@ void run_benchmark(const char* name, const Workload& w, double tpn) {
                 s.mean, s.p50, s.p90, s.p99, s.p999, s.max);
 }
 
-int main() {
+int main(int argc, char** argv) {
+    const int runs = argc > 1 ? std::atoi(argv[1]) : 5;
     prefer_performance_core();
 
 #if !defined(__OPTIMIZE__)
@@ -94,6 +97,6 @@ int main() {
     std::printf("book     : min %zu | avg %.0f | max %zu resting orders during measured ops\n",
                 w.book_min, w.book_avg, w.book_max);
 
-    run_benchmark<NaiveBook<CountingListener>>("naive book (std::map + std::list)", w, tpn);
+    run_benchmark<NaiveBook<CountingListener>>("naive book (std::map + std::list)", w, tpn, runs);
     return 0;
 }
