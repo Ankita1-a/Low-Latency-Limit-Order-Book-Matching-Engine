@@ -66,3 +66,10 @@ target_link_libraries(unit_tests PRIVATE lob_baseline doctest lob_warnings)
 # Register with CTest, CMake's test runner.
 enable_testing()
 add_test(NAME unit_tests COMMAND unit_tests)
+
+# ---- Randomized differential fuzzer ----
+add_executable(fuzz_differential tests/fuzz_differential.cpp)
+target_link_libraries(fuzz_differential PRIVATE lob_baseline lob_warnings)
+
+# A quick run as part of the test suite: seeds 1..50, 2000 ops each.
+add_test(NAME fuzz_quick COMMAND fuzz_differential 1 50 2000)
