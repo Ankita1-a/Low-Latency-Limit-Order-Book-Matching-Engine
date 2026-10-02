@@ -10,6 +10,9 @@
 #include "doctest.h"
 #include "lob/events.hpp"
 #include "naive_book.hpp"
+#include "invariants.hpp"
+#include "lob/snapshot.hpp"
+#include <string>
 
 using namespace lob;
 
@@ -69,6 +72,8 @@ void expect_events(F& f, const std::vector<Event>& expected) {
         for (const Event& e : actual) print_event(stderr, e);
     }
     CHECK(actual == expected);
+    const std::string err = check_invariants(f.book);
+    CHECK_MESSAGE(err.empty(), err);
 }
 
 // Check the order IDs queued at one price, front first.
@@ -388,4 +393,42 @@ TEST_CASE_TEMPLATE("a full book rejects orders that could rest", Book, BOOK_TYPE
     f.book.cancel(2);                          // frees a slot
     f.book.add(3, Buy, Limit, 1998, 10);
     expect_events(f, {cxl(2, 10, UserRequested), acc(3, Buy, Limit, 1998, 10)});
+}
+
+
+// =====================================================================
+// The invariant checker itself
+// =====================================================================
+// A checker that never complains is useless. Build snapshots that are
+// broken on purpose and make sure each one is caught.
+
+TEST_CASE("invariant checker catches broken books") {
+    BookSnapshot good;
+    good.bids = {LevelView{2000, {OrderView{1, 10}}}};
+    good.asks = {LevelView{2005, {OrderView{2, 10}}}};
+    CHECK(check_snapshot(good, kMin, kMax).empty());
+
+    BookSnapshot crossed = good;
+    crossed.asks[0].price = 2000;                          // bid 2000 >= ask 2000
+    CHECK_FALSE(check_snapshot(crossed, kMin, kMax).empty());
+
+    BookSnapshot empty_level = good;
+    empty_level.bids.push_back(LevelView{1999, {}});       // level with no orders
+    CHECK_FALSE(check_snapshot(empty_level, kMin, kMax).empty());
+
+    BookSnapshot zero_qty = good;
+    zero_qty.bids[0].orders[0].qty = 0;
+    CHECK_FALSE(check_snapshot(zero_qty, kMin, kMax).empty());
+
+    BookSnapshot duplicate = good;
+    duplicate.asks[0].orders[0].id = 1;                    // same ID as the bid
+    CHECK_FALSE(check_snapshot(duplicate, kMin, kMax).empty());
+
+    BookSnapshot unsorted = good;
+    unsorted.bids.push_back(LevelView{2001, {OrderView{3, 5}}});  // 2001 after 2000
+    CHECK_FALSE(check_snapshot(unsorted, kMin, kMax).empty());
+
+    BookSnapshot out_of_band = good;
+    out_of_band.bids.push_back(LevelView{1800, {OrderView{4, 5}}});  // below 1900
+    CHECK_FALSE(check_snapshot(out_of_band, kMin, kMax).empty());
 }

@@ -19,6 +19,7 @@
 #include <vector>
 
 #include "lob/events.hpp"
+#include "lob/snapshot.hpp"
 #include "lob/types.hpp"
 
 namespace lob {
@@ -165,7 +166,18 @@ public:
     }
 
     std::size_t order_count() const { return index_.size(); }
+    // Configuration, so tests can check orders against the band and capacity.
+    Price       min_price() const { return min_price_; }
+    Price       max_price() const { return max_price_; }
+    std::size_t capacity()  const { return max_orders_; }
 
+    // A full copy of the book in the common format (tests only: slow).
+    BookSnapshot snapshot() const {
+        BookSnapshot s;
+        for (const auto& [price, queue] : bids_) s.bids.push_back(make_level(price, queue));
+        for (const auto& [price, queue] : asks_) s.asks.push_back(make_level(price, queue));
+        return s;
+    }
     void print(std::FILE* f) const {
         std::fprintf(f, "  ASKS\n");
         if (asks_.empty()) std::fprintf(f, "    (empty)\n");
@@ -318,7 +330,13 @@ private:
         for (const RestingOrder& o : level->second) ids.push_back(o.id);
         return ids;
     }
-
+    static LevelView make_level(Price price, const Queue& queue) {
+        LevelView level{price, {}};
+        for (const RestingOrder& o : queue) {
+            level.orders.push_back({o.id, o.qty});
+        }
+        return level;
+    }
     static void print_level(std::FILE* f, Price price, const Queue& queue) {
         std::fprintf(f, "    %d |", price);
         for (const RestingOrder& o : queue) {
