@@ -105,25 +105,29 @@ int main() {
 
     std::printf("\n== Timer ==\n");
     std::printf("Counter frequency   : %.1f MHz\n", static_cast<double>(hz) / 1e6);
-    std::printf("Resolution          : %.1f ns per tick\n", ns_per_tick);
+    std::printf("Nominal resolution  : %.1f ns per tick (what the hardware claims)\n", ns_per_tick);
 
     // Read the timer a million times in a row and look at the gaps.
     // If most gaps are 0, one read is faster than one tick, which means
     // the clock is too coarse to time very short operations directly.
     constexpr int kReads = 1'000'000;
     uint64_t gap_zero = 0, gap_one = 0, gap_more = 0;
+    uint64_t min_step = UINT64_MAX;
     const uint64_t start = read_ticks();
     uint64_t prev = start;
     for (int i = 0; i < kReads; ++i) {
         const uint64_t now = read_ticks();
         const uint64_t gap = now - prev;
+        if (gap > 0 && gap < min_step) min_step = gap;
         if (gap == 0)      ++gap_zero;
         else if (gap == 1) ++gap_one;
         else               ++gap_more;
         prev = now;
     }
     const double read_cost_ns = static_cast<double>(prev - start) * ns_per_tick / kReads;
-
+    std::printf("Observed step       : %llu ticks = %.1f ns (real resolution)\n",
+                static_cast<unsigned long long>(min_step),
+                static_cast<double>(min_step) * ns_per_tick);
     std::printf("Cost of one read    : %.1f ns\n", read_cost_ns);
     std::printf("Back-to-back gaps   : %.1f%% zero ticks, %.1f%% one tick, %.2f%% more\n",
                 100.0 * gap_zero / kReads, 100.0 * gap_one / kReads, 100.0 * gap_more / kReads);
