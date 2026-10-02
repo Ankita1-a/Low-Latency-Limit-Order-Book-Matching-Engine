@@ -64,7 +64,7 @@ add_library(doctest INTERFACE)
 target_include_directories(doctest SYSTEM INTERFACE third_party/doctest)
 target_compile_definitions(doctest INTERFACE DOCTEST_CONFIG_USE_STD_HEADERS)
 
-add_executable(unit_tests tests/test_main.cpp tests/test_book.cpp)
+add_executable(unit_tests tests/test_main.cpp tests/test_book.cpp tests/test_order_pool.cpp)
 target_link_libraries(unit_tests PRIVATE lob_baseline doctest lob_warnings)
 
 # Register with CTest, CMake's test runner.
