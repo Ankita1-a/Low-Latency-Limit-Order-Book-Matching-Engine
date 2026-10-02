@@ -36,3 +36,7 @@ target_include_directories(lob INTERFACE include)
 # Sanity check for types.hpp
 add_executable(check_types tests/check_types.cpp)
 target_link_libraries(check_types PRIVATE lob lob_warnings)
+
+# Sanity check for events.hpp
+add_executable(check_events tests/check_events.cpp)
+target_link_libraries(check_events PRIVATE lob lob_warnings)
