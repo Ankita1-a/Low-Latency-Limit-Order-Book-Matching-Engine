@@ -26,3 +26,13 @@ target_compile_options(lob_warnings INTERFACE -Wall -Wextra -Wpedantic)
 # Machine and timer probe.
 add_executable(env_probe bench/env_probe.cpp)
 target_link_libraries(env_probe PRIVATE lob_warnings)
+
+# ---- The order book library ----
+# Header-only, so it's an INTERFACE library: nothing to compile on its own,
+# but anything that links to it gets the include/ folder on its search path.
+add_library(lob INTERFACE)
+target_include_directories(lob INTERFACE include)
+
+# Sanity check for types.hpp
+add_executable(check_types tests/check_types.cpp)
+target_link_libraries(check_types PRIVATE lob lob_warnings)
