@@ -40,3 +40,12 @@ target_link_libraries(check_types PRIVATE lob lob_warnings)
 # Sanity check for events.hpp
 add_executable(check_events tests/check_events.cpp)
 target_link_libraries(check_events PRIVATE lob lob_warnings)
+
+# ---- The reference (naive) book ----
+add_library(lob_baseline INTERFACE)
+target_include_directories(lob_baseline INTERFACE baseline)
+target_link_libraries(lob_baseline INTERFACE lob)
+
+# Walkthrough of the naive book
+add_executable(check_naive_book tests/check_naive_book.cpp)
+target_link_libraries(check_naive_book PRIVATE lob_baseline lob_warnings)
