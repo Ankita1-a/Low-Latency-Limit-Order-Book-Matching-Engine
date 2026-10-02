@@ -73,3 +73,9 @@ target_link_libraries(fuzz_differential PRIVATE lob_baseline lob_warnings)
 
 # A quick run as part of the test suite: seeds 1..50, 2000 ops each.
 add_test(NAME fuzz_quick COMMAND fuzz_differential 1 50 2000)
+
+# ---- Benchmarks ----
+add_executable(bench_book bench/bench_main.cpp)
+# tests/ holds random_ops.hpp (Op and Rng are shared with the fuzzer)
+target_include_directories(bench_book PRIVATE tests)
+target_link_libraries(bench_book PRIVATE lob_baseline lob_warnings)
